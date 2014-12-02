@@ -6,7 +6,8 @@ import PolcalMatrices as P
 
 class TestPolcalMat:
 	
-	PM = P.PolcalMatrices([1,1,1,1])
+	def __init__(self):
+		self.PM = P.PolcalMatrices([1,1,1,1])
 
 	def test_wq_special(self):
 		""" Confirm that wq has determinent 1 
