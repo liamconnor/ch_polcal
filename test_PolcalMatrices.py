@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as la
 
 import polcalqui as pq
-
+import PolcalMatrices as P
 
 class TestPolcalMat:
 	
