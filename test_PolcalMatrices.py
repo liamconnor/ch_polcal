@@ -1,27 +1,29 @@
 import numpy as np
 import numpy.linalg as la
+import unittest
 
 import polcalqui as pq
 import PolcalMatrices as P
 
-class TestPolcalMat(P.PolcalMatrices):
-	
+PM = P.PolcalMatrices([1,1,1,1])
+
+class TestPolcalMat(unittest.TestCase):	
 
 	def test_wq_special(self):
 		""" Confirm that wq has determinent 1 
 			for random angles
 		"""
 		angles = np.random.rand(3)
-		wq = self.wq(angles[0], angles[1], angles[2])
+		wq = PM.wq(angles[0], angles[1], angles[2])
 
-		assert np.round(la.det(wq), 5) == 1 
+		assert np.round(la.det(wq), 5) == 1
 
 	def test_wq_unitary(self):
 		""" Confirm that wq is unitary
 		"""
 		angles = np.random.rand(3)
-		wq = self.wq(angles[0], angles[1], angles[2])
-		dq = self.dq
+		wq = PM.wq(angles[0], angles[1], angles[2])
+		dq = PM.dq
 
 		assert (np.round(wq * dq * wq.H) == dq).all()
 	
@@ -29,7 +31,7 @@ class TestPolcalMat(P.PolcalMatrices):
 		""" Check M_U's determinent
 		"""
 		angles = np.random.rand(3)
-		mu = self.mu(angles[0], angles[1], angles[2])
+		mu = PM.mu(angles[0], angles[1], angles[2])
 
 		assert np.round(la.det(mu), 3) == -1
 
@@ -37,7 +39,9 @@ class TestPolcalMat(P.PolcalMatrices):
 		""" Check M_IC's determinent
 		"""
 		angles = np.random.rand(3)
-		mic = self.mic(angles[0], angles[1], angles[2])
+		mic = PM.mic(angles[0], angles[1], angles[2])
 
-		assert 	np.round(la.det(mic), 3) == self.I**2 - self.C**2
+		assert 	np.round(la.det(mic), 3) == PM.I**2 - PM.C**2
 
+if __name__=='__main__':
+	unittest.main()
