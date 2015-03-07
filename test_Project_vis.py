@@ -1,0 +1,100 @@
+import numpy as np
+import unittest
+import time
+import h5py
+
+import Project_vis as pv
+import ch_util.ephemeris as eph
+import PolcalMatrices as PM
+import coord_tools
+
+class Test_Project_vis(unittest.TestCase):
+
+    t0 = time.time()
+    times = np.linspace(t0-3600, t0+3600, 1000)
+    RA_src = 54.0
+    dec_src = 55.0
+
+    def test_drao_aro_RA(self):
+        times = self.times
+        diff_true = np.round(np.mod(eph.CHIMELONGITUDE - (-78.0730), 360))
+
+        DRAO_RA_trans = eph.transit_RA(times)
+        ARO_RA_trans = pv.drao_aro_RA(times)
+
+        diff = np.round(np.mod(DRAO_RA_trans - ARO_RA_trans, 360).mean())
+
+        assert diff == diff_true
+        assert np.round(np.std(diff), 2)==0.0
+
+    def test_ha_src(self):
+        times = self.times
+        ha_src = pv.ha_src(times, self.RA_src)
+        
+        diff_true = np.round(np.mod(eph.CHIMELONGITUDE - (-78.0730), 360))
+        trans_time = eph.transit_times(self.RA_src + diff_true, times[0])
+        ha_src_trans = np.mod(np.round(pv.ha_src(trans_time, self.RA_src)), 360)
+
+        ha_src_pretrans = pv.ha_src(trans_time - 1000, self.RA_src)
+
+        assert ha_src_trans == 0.0
+        assert (ha_src < 360).all()
+        assert ha_src_pretrans < 0.0
+    
+    def test_unix_to_ha(self):
+
+        pass
+
+    def test_get_parallactic(self):
+        times = self.times
+        
+        par = pv.get_parallactic(times, self.RA_src, self.dec_src)
+        
+        assert len(par)==len(times)
+        assert (par < 360.0).all()
+        
+        
+
+def _test_simulate_observation():
+    """ Simulate a time stream and get polcal solution
+    """
+    I, Q, U, V = 1, 0.1, 0.2, 0.0
+    PolMat = PM.PolcalMatrices([I, Q, U, V])
+
+    RA_src = 54.0
+    dec_src = 55.0
+
+    ha_r = np.linspace(-np.pi/4, np.pi/4, 1000)
+    phase = coord_tools.local_coords_dhl(np.radians(dec_src), \
+               ha_r, np.radians(pv.AROLATITUDE))[-1][:, np.newaxis, np.newaxis]
+
+
+    V_Q = np.array(Q * PolMat.dq)[np.newaxis]
+    V_U = np.array(U * PolMat.du)[np.newaxis]
+    V_I = np.array(I * PolMat.dic)[np.newaxis] # Since this should be identity
+    
+    V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(2*1.0J*phase) \
+            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-2*1.0J*phase) + \
+            0*np.random.normal(0, .01, 1000*2*2).reshape(1000, 2, 2)
+
+    print np.linalg.det(V_Q)[0].dtype, -1 * Q**2
+    assert np.round(np.linalg.det(V_Q)[0], 2) == np.round(-1 * Q**2, 2)
+    assert np.linalg.det(V_U)[0].astype(np.float) == -1 * U**2
+    assert np.linalg.det(V_I)[0].astype(np.float) == 1 * I**2
+        
+    return V.reshape(-1, 4)[:, (0,1,3)], ha_r, phase
+        
+if __name__=='__main__':
+    V, ha_r, ph = _test_simulate_observation()
+    V = np.array(V[..., np.newaxis] * np.ones([1, 1, len(ha_r)]))
+    
+    f = h5py.File('test.hdf5','w')
+    f.create_dataset('arr', data=V)
+    f.create_dataset('times', data=ha_r)
+    f.create_dataset('phase', data=ph)
+    
+    f.close()
+
+    unittest.main()
+    
+    
