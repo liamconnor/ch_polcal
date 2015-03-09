@@ -75,7 +75,7 @@ def _test_simulate_observation():
     
     V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(2*1.0J*phase) \
             + 0.5*(V_Q + 1.0J*V_U)*np.exp(-2*1.0J*phase) + \
-            0*np.random.normal(0, .01, 1000*2*2).reshape(1000, 2, 2)
+           10*np.random.normal(0, .01, 1000*2*2).reshape(1000, 2, 2)
 
     print np.linalg.det(V_Q)[0].dtype, -1 * Q**2
     assert np.round(np.linalg.det(V_Q)[0], 2) == np.round(-1 * Q**2, 2)

@@ -73,15 +73,15 @@ if __name__=='__main__':
 
         B = data[:, corr, :]
 
-        x_sol[:, corr,:] = np.linalg.lstsq(A, B)[0]
+        x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
         
-        print corr, np.round(x_sol[1, corr] + x_sol[2, corr], 3)
-        print 1j * np.round(x_sol[1, corr] - x_sol[2, corr], 3)
-        print x_sol[:, corr, 0]
-        print x_sol.shape
+#        print corr, np.round(x_sol[1, corr] + x_sol[2, corr], 3)
+#        print 1j * np.round(x_sol[1, corr] - x_sol[2, corr], 3)
+#        print x_sol[:, corr, 0]
+#        print x_sol.shape
 
     dataPOL = np.zeros_like(x_sol)
-
+    print dataPOL.shape
     dataPOL[0,:,:] = x_sol[0,:,:] 
     # Should be unpolarized solution for each freq and baseline                   
     dataPOL[1,:,:] = x_sol[1,:,:] + x_sol[2,:,:]
@@ -89,6 +89,8 @@ if __name__=='__main__':
     dataPOL[2,:,:] = 1.0J*(x_sol[1,:,:] - x_sol[2,:,:]) 
     # Gives us Stokes U    
     
-#    print (dataPOL[0]), dataPOL[1], (dataPOL[2])
+    g = h5py.File('outtest.hdf5','w')
+    g.create_dataset('data', data=dataPOL)
+    g.close()
 
 
