@@ -68,19 +68,27 @@ def _test_simulate_observation():
     phase = coord_tools.local_coords_dhl(np.radians(dec_src), \
                ha_r, np.radians(pv.AROLATITUDE))[-1][:, np.newaxis, np.newaxis]
 
+    J = np.array([[1, 0.01],[0.01, 1]])
 
-    V_Q = np.array(Q * PolMat.dq)[np.newaxis]
-    V_U = np.array(U * PolMat.du)[np.newaxis]
-    V_I = np.array(I * PolMat.dic)[np.newaxis] # Since this should be identity
-    
+    P_Q = np.array(Q * PolMat.dq)
+    P_U = np.array(U * PolMat.du)
+    P_I = np.array(I * PolMat.dic)
+
+    V_Q = np.dot(J, np.dot(P_Q, np.conj(J.transpose())))[np.newaxis]
+    V_U = np.dot(J, np.dot(P_U, np.conj(J.transpose())))[np.newaxis]
+    V_I = np.dot(J, np.dot(P_I, np.conj(J.transpose())))[np.newaxis]
+
+    print V_Q.shape
+    print np.exp(2*1.0J*phase).shape
+
     V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(2*1.0J*phase) \
             + 0.5*(V_Q + 1.0J*V_U)*np.exp(-2*1.0J*phase) + \
            10*np.random.normal(0, .01, 1000*2*2).reshape(1000, 2, 2)
 
-    print np.linalg.det(V_Q)[0].dtype, -1 * Q**2
-    assert np.round(np.linalg.det(V_Q)[0], 2) == np.round(-1 * Q**2, 2)
-    assert np.linalg.det(V_U)[0].astype(np.float) == -1 * U**2
-    assert np.linalg.det(V_I)[0].astype(np.float) == 1 * I**2
+
+    assert np.round(np.linalg.det(P_Q), 2) == np.round(-1 * Q**2, 2)
+    assert np.linalg.det(P_U).astype(np.float) == -1 * U**2
+    assert np.linalg.det(P_I).astype(np.float) == 1 * I**2
         
     return V.reshape(-1, 4)[:, (0,1,3)], ha_r, phase
         
