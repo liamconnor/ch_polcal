@@ -50,7 +50,8 @@ if __name__=='__main__':
     f = h5py.File(fname, 'r')
     data = f['arr'][:]
     times = f['times'][:]
-    
+    phase = f['phase'][:]
+
     rmodel = abs(data.copy())
 
     nfreq = data.shape[0]
@@ -59,36 +60,36 @@ if __name__=='__main__':
     
     assert len(times)==ntimes
     
-    phase = 2 * get_parallactic(times, RA_src, dec_src)
-    phase = -2 * coord_tools.local_coords_dhl\
-        (np.radians(dec_src), times, np.radians(AROLATITUDE))[-1]
+#    phase = 2 * get_parallactic(times, RA_src, dec_src)
+#    phase = 2 * coord_tools.local_coords_dhl\
+#        (np.radians(dec_src), times, np.radians(AROLATITUDE))[-1]
 
     A = np.zeros([ntimes, 3], np.complex128)
     x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
 
     for corr in range(ncorr):
-        A[:, 0] = rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
-        A[:, 1] = np.exp(1.0J * phase) * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
-        A[:, 2] = np.exp(-1.0J * phase) * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 0] = 1#rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
 
         B = data[:, corr, :]
 
         x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
-        
-#        print corr, np.round(x_sol[1, corr] + x_sol[2, corr], 3)
-#        print 1j * np.round(x_sol[1, corr] - x_sol[2, corr], 3)
-#        print x_sol[:, corr, 0]
-#        print x_sol.shape
+
 
     dataPOL = np.zeros_like(x_sol)
-    print dataPOL.shape
-    dataPOL[0,:,:] = x_sol[0,:,:] 
+
+    dataPOL[0, :, :] = x_sol[0,:,:] 
     # Should be unpolarized solution for each freq and baseline                   
-    dataPOL[1,:,:] = x_sol[1,:,:] + x_sol[2,:,:]
+    dataPOL[1, :, :] = x_sol[1, :, :] + x_sol[2, :, :]
     # Gives us Stokes Q visibities                                                                             
-    dataPOL[2,:,:] = 1.0J*(x_sol[1,:,:] - x_sol[2,:,:]) 
+    dataPOL[2, :, :] = 1.0J*(x_sol[1, :, :] - x_sol[2, :, :]) 
     # Gives us Stokes U    
     
+    print "I : xx,xy,yy", np.round(dataPOL[0, :, 0],3)
+    print "Q : xx,xy,yy", np.round(dataPOL[1, :, 0],3)
+    print "U : xx,xy,yy", np.round(dataPOL[2, :, 0],3)
+
     g = h5py.File('outtest.hdf5','w')
     g.create_dataset('data', data=dataPOL)
     g.close()
