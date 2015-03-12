@@ -11,9 +11,9 @@ import coord_tools
 class Test_Project_vis(unittest.TestCase):
 
     t0 = time.time()
-    times = np.linspace(t0-3600, t0+3600, 1000)
-    RA_src = 54.0
-    dec_src = 55.0
+    ntimes = 1000
+    times = np.linspace(t0-3600, t0+3600, ntimes)
+    RA_src, dec_src = 53.51337, 54.6248916
 
     def test_drao_aro_RA(self):
         times = self.times
@@ -58,33 +58,44 @@ class Test_Project_vis(unittest.TestCase):
 def _test_simulate_observation():
     """ Simulate a time stream and get polcal solution
     """
-    I, Q, U, V = 1, 0.1, 0.2, 0.0
+    lr = False
+    I, Q, U, V = 1, 0.05, 0.15, 0.0
     PolMat = PM.PolcalMatrices([I, Q, U, V])
 
-    RA_src = 54.0
-    dec_src = 55.0
+    RA_src, dec_src = 53.51337, 54.6248916
 
-    ha_r = np.linspace(-np.pi/4, np.pi/4, 1000)
-    phase = coord_tools.local_coords_dhl(np.radians(dec_src), \
+    ntimes = 1000
+
+    ha_r = np.linspace(-np.pi/4, np.pi/4, ntimes)
+    phase = 2 * coord_tools.local_coords_dhl(np.radians(dec_src), \
                ha_r, np.radians(pv.AROLATITUDE))[-1][:, np.newaxis, np.newaxis]
 
-    J = np.array([[1, 0.01],[0.01, 1]])
+    J = np.array([[1., 0.], [0.3+0.1j, 2.]])# * np.exp(1j*33*0.0)
 
-    P_Q = np.array(Q * PolMat.dq)
-    P_U = np.array(U * PolMat.du)
-    P_I = np.array(I * PolMat.dic)
+    P_Q = np.array(Q * PolMat.dq).astype(np.complex128)
+    P_U = np.array(U * PolMat.du).astype(np.complex128)
+    P_I = np.array(I * PolMat.dic).astype(np.complex128)
+
+    if lr:
+        P_U[1,0] *= -1.0j
+        P_U[0,1] *= 1.0j
+        P_Q *= 0.0
+        P_Q[0,1] = Q 
+        P_Q[1,0] = Q
+
+        print "P_U, P_Q" 
+        print P_U
+        print P_Q 
+        print ""
 
     V_Q = np.dot(J, np.dot(P_Q, np.conj(J.transpose())))[np.newaxis]
     V_U = np.dot(J, np.dot(P_U, np.conj(J.transpose())))[np.newaxis]
     V_I = np.dot(J, np.dot(P_I, np.conj(J.transpose())))[np.newaxis]
+    noise = np.random.normal(0, 0.1, ntimes*2*2).reshape(-1, 2, 2)\
+        + 1j * np.random.normal(0, 0.1, ntimes*2*2).reshape(-1, 2, 2)
 
-    print V_Q.shape
-    print np.exp(2*1.0J*phase).shape
-
-    V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(2*1.0J*phase) \
-            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-2*1.0J*phase) + \
-           10*np.random.normal(0, .01, 1000*2*2).reshape(1000, 2, 2)
-
+    V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(1.0J*phase) \
+            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-1.0J*phase) + 0.0 * noise
 
     assert np.round(np.linalg.det(P_Q), 2) == np.round(-1 * Q**2, 2)
     assert np.linalg.det(P_U).astype(np.float) == -1 * U**2
@@ -99,7 +110,7 @@ if __name__=='__main__':
     f = h5py.File('test.hdf5','w')
     f.create_dataset('arr', data=V)
     f.create_dataset('times', data=ha_r)
-    f.create_dataset('phase', data=ph)
+    f.create_dataset('phase', data=ph[:, 0, 0])
     
     f.close()
 
