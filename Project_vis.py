@@ -68,14 +68,13 @@ if __name__=='__main__':
     x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
 
     for corr in range(ncorr):
-        A[:, 0] = 1#rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 0] = 1 #rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
         A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
         A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
 
         B = data[:, corr, :]
 
         x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
-
 
     dataPOL = np.zeros_like(x_sol)
 
@@ -86,9 +85,9 @@ if __name__=='__main__':
     dataPOL[2, :, :] = 1.0J*(x_sol[1, :, :] - x_sol[2, :, :]) 
     # Gives us Stokes U    
     
-    print "I : xx,xy,yy", np.round(dataPOL[0, :, 0],3)
-    print "Q : xx,xy,yy", np.round(dataPOL[1, :, 0],3)
-    print "U : xx,xy,yy", np.round(dataPOL[2, :, 0],3)
+    print "I : xx, xy, yy", np.round(dataPOL[0, :, 0],3)
+    print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0],3)
+    print "U : xx, xy, yy", np.round(dataPOL[2, :, 0],3)
 
     g = h5py.File('outtest.hdf5','w')
     g.create_dataset('data', data=dataPOL)

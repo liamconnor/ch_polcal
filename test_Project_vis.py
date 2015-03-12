@@ -70,7 +70,8 @@ def _test_simulate_observation():
     phase = 2 * coord_tools.local_coords_dhl(np.radians(dec_src), \
                ha_r, np.radians(pv.AROLATITUDE))[-1][:, np.newaxis, np.newaxis]
 
-    J = np.array([[1., 0.], [0.3+0.1j, 2.]])# * np.exp(1j*33*0.0)
+    J = np.array([[1., 0.3+.1j], [0.2+0.18j, 1.2]]) #* np.exp(1j*33*1.0)
+    print J / J[0,0]
 
     P_Q = np.array(Q * PolMat.dq).astype(np.complex128)
     P_U = np.array(U * PolMat.du).astype(np.complex128)
@@ -91,11 +92,18 @@ def _test_simulate_observation():
     V_Q = np.dot(J, np.dot(P_Q, np.conj(J.transpose())))[np.newaxis]
     V_U = np.dot(J, np.dot(P_U, np.conj(J.transpose())))[np.newaxis]
     V_I = np.dot(J, np.dot(P_I, np.conj(J.transpose())))[np.newaxis]
+
+    print ""
+    print "I : xx, xy, yy", np.round([V_I[0,0,0], V_I[0,0,1], V_I[0,1,1]], 3)
+    print "Q : xx, xy, yy", np.round([V_Q[0,0,0], V_Q[0,0,1], V_Q[0,1,1]], 3)
+    print "U : xx, xy, yy", np.round([V_U[0,0,0], V_U[0,0,1], V_U[0,1,1]], 3)
+    print ""
+
     noise = np.random.normal(0, 0.1, ntimes*2*2).reshape(-1, 2, 2)\
         + 1j * np.random.normal(0, 0.1, ntimes*2*2).reshape(-1, 2, 2)
 
     V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(1.0J*phase) \
-            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-1.0J*phase) + 0.0 * noise
+            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-1.0J*phase) + 0. * noise
 
     assert np.round(np.linalg.det(P_Q), 2) == np.round(-1 * Q**2, 2)
     assert np.linalg.det(P_U).astype(np.float) == -1 * U**2
