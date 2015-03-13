@@ -33,7 +33,7 @@ def ha_src(times, RA_src):
 
 def get_parallactic(times, RA_src, dec_src):
     """ Takes unix times, source location
-    and return parallactic angle in degrees
+    and return parallactic angle in degrees for ARO
     """
     ha_r = np.radians(ha_src(times, RA_src))
     lat_r = np.radians(AROLATITUDE)
@@ -43,14 +43,29 @@ def get_parallactic(times, RA_src, dec_src):
 
     return np.degrees(par_r)
 
+def fit_parallactic_rot(arr, phase):
+    nfreq = data.shape[0]
+    ncorr = data.shape[1]
+    ntimes = data.shape[-1]
+
+    A = np.zeros([ntimes, 3], np.complex128)
+    x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
+    
+    
+
 
 if __name__=='__main__':
-    fname = 'test.hdf5'
+    fname = 'poldata.hdf5'
+
+    RA_src, dec_src = 53.51337, 54.6248916
 
     f = h5py.File(fname, 'r')
     data = f['arr'][:]
     times = f['times'][:]
-    phase = f['phase'][:]
+#    phase = f['phase'][:]
+
+    phase = get_parallactic(times, RA_src, dec_src)
+    phase = (phase[0] - phase)/2
 
     rmodel = abs(data.copy())
 
@@ -72,7 +87,7 @@ if __name__=='__main__':
         A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
         A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
 
-        B = data[:, corr, :]
+        B = data[:, corr, :].transpose()
 
         x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
 
@@ -85,9 +100,9 @@ if __name__=='__main__':
     dataPOL[2, :, :] = 1.0J*(x_sol[1, :, :] - x_sol[2, :, :]) 
     # Gives us Stokes U    
     
-    print "I : xx, xy, yy", np.round(dataPOL[0, :, 0],3)
-    print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0],3)
-    print "U : xx, xy, yy", np.round(dataPOL[2, :, 0],3)
+    print "I : xx, xy, yy", np.round(dataPOL[0, :, 0]/dataPOL[0,0,0], 3)
+    print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0]/dataPOL[0,0,0], 3)
+    print "U : xx, xy, yy", np.round(dataPOL[2, :, 0]/dataPOL[0,0,0], 3)
 
     g = h5py.File('outtest.hdf5','w')
     g.create_dataset('data', data=dataPOL)
