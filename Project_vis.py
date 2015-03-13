@@ -43,7 +43,7 @@ def get_parallactic(times, RA_src, dec_src):
 
     return np.degrees(par_r)
 
-def fit_parallactic_rot(arr, phase):
+def fit_parallactic_rot(data, phase):
     nfreq = data.shape[0]
     ncorr = data.shape[1]
     ntimes = data.shape[-1]
@@ -81,7 +81,7 @@ if __name__=='__main__':
 #    phase = f['phase'][:]
 
     phase = get_parallactic(times, RA_src, dec_src)
-    phase = (phase[0] - phase)/2
+    phase = (np.radians(phase[0] - phase)/2)
 
     rmodel = abs(data.copy())
 
@@ -89,9 +89,9 @@ if __name__=='__main__':
     ncorr = data.shape[1]
     ntimes = data.shape[-1]
     
-    assert len(times)==ntimes
+    assert len(phase)==ntimes
 
-    dataPOL = fit_parallactic_rot(arr, phase)
+    dataPOL = fit_parallactic_rot(data, phase)
     
     print "I : xx, xy, yy", np.round(dataPOL[0, :, 0]/dataPOL[0,0,0], 3)
     print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0]/dataPOL[0,0,0], 3)
