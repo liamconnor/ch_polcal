@@ -51,8 +51,24 @@ def fit_parallactic_rot(arr, phase):
     A = np.zeros([ntimes, 3], np.complex128)
     x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
     
-    
+    for corr in range(ncorr):
+        A[:, 0] = 1 #rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
+        A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
 
+        B = data[:, corr, :].transpose()
+
+        x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
+
+    dataPOL = np.zeros_like(x_sol)
+
+    dataPOL[0, :, :] = x_sol[0, :, :] 
+    # Should be unpolarized solution for each freq and baseline                   
+    dataPOL[1, :, :] = x_sol[1, :, :] + x_sol[2, :, :]
+    # Gives us Stokes Q visibities                                                                             
+    dataPOL[2, :, :] = 1.0J*(x_sol[1, :, :] - x_sol[2, :, :]) 
+
+    return dataPOL
 
 if __name__=='__main__':
     fname = 'poldata.hdf5'
@@ -74,31 +90,8 @@ if __name__=='__main__':
     ntimes = data.shape[-1]
     
     assert len(times)==ntimes
-    
-#    phase = 2 * get_parallactic(times, RA_src, dec_src)
-#    phase = 2 * coord_tools.local_coords_dhl\
-#        (np.radians(dec_src), times, np.radians(AROLATITUDE))[-1]
 
-    A = np.zeros([ntimes, 3], np.complex128)
-    x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
-
-    for corr in range(ncorr):
-        A[:, 0] = 1 #rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
-        A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
-        A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
-
-        B = data[:, corr, :].transpose()
-
-        x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
-
-    dataPOL = np.zeros_like(x_sol)
-
-    dataPOL[0, :, :] = x_sol[0,:,:] 
-    # Should be unpolarized solution for each freq and baseline                   
-    dataPOL[1, :, :] = x_sol[1, :, :] + x_sol[2, :, :]
-    # Gives us Stokes Q visibities                                                                             
-    dataPOL[2, :, :] = 1.0J*(x_sol[1, :, :] - x_sol[2, :, :]) 
-    # Gives us Stokes U    
+    dataPOL = fit_parallactic_rot(arr, phase)
     
     print "I : xx, xy, yy", np.round(dataPOL[0, :, 0]/dataPOL[0,0,0], 3)
     print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0]/dataPOL[0,0,0], 3)
