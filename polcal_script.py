@@ -7,7 +7,7 @@ import h5py
 import polsol_tools as polsol
 import PolcalMatrices
 
-lr = False
+lr = True
 
 PM = PolcalMatrices.PolcalMatrices([1, 1, 1, 0.0])
 
@@ -20,28 +20,16 @@ else:
 f = h5py.File('outtest.hdf5', 'r')
 arr = f['data'][:]
 
+g = h5py.File('test.hdf5', 'r')
+J_true = g['J'][:]
+P_U_true = g['P_U'][:]
+P_Q_true = g['P_Q'][:]
+
+
 nfeed = 2
 nfreq = arr.shape[-1]
 
 V_I, V_Q, V_U = polsol.pop_stokes_mat(arr, nfeed=nfeed)
-
-"""################# SIMULATION ###############################
-J = np.matrix([[ 1.+0.j,  0.53+0.05j],[ 0.8+0.j,  1.+0.j]])
-
-print J
-
-#J = np.matrix([[ 1.00+0.j  ,  0.10+0.3j ],[0.09+0.22j,  1.00+0.j]])
-V_I = PM.I * PM.dic
-V_I = np.dot(J, np.dot(V_I, J.H))
-V_I = np.array(V_I)[:,:, np.newaxis]
-
-V_Q = np.matrix([[0.0,  PM.Q],[PM.Q, 0.0]])
-V_Q = np.array(np.dot(J, np.dot(V_Q, J.H)))[..., np.newaxis]
-
-V_U = np.matrix([[0.0,  1j*PM.U],[-1j*PM.U, 0.0]])
-V_U = np.array(np.dot(J, np.dot(V_U, J.H)))[..., np.newaxis]
-################# SIMULATION ###############################
-nfreq = V_U.shape[-1]"""
 
 print 'getting unpol e-vec'
 gain = polsol.get_eigenvectors(V_I, nfreq)
@@ -55,16 +43,65 @@ gain[:, :, 1] = gain[:, :, 1] / (abs(gain[:, :, 1])**2).sum(axis=0)
 for freq in range(nfreq-1, nfreq):
     theta, QM = polsol.polsol_freq(gain[:, freq], V_Q[..., freq], V_U[..., freq], lr=lr)
 
+    E = np.zeros([2, 2], np.complex128)
+    E[0,0] = np.exp(1j * theta)
+    E[1,1] = np.exp(-1j * theta)
+    J_ = np.dot(np.dot(gain_solution[:,freq], QM), np.dot(E, np.matrix(Qp).H))
+    J_ = np.matrix(J_)
+
     gain_solution[:, freq] = np.dot(gain_solution[:, freq], QM)
 
     gain_solution[:, freq, 0] = gain_solution[:, freq, 0] * np.exp(1.0J*theta)
     gain_solution[:, freq, 1] = gain_solution[:, freq, 1] * np.exp(-1.0J*theta)
     gain_solution[:, freq, :] = np.dot(gain_solution[:, freq, :], Qp)
 
-    print (gain_solution[:, freq, :] / gain_solution[0, freq, 0])
+
+    print "================================================================"
+    print "==                 COMPARE JONES SOLUTIONS                    =="
+    print "================================================================"
+    print ""
+    print ""
+
+    print "True Jones matrix"
+    print J_true / J_true[0,0]
+    print ""
+
+    print "Jones solution"
+    print np.round(J_ / J_[0,0], 4)
+    print 
+
+    print "================================================================"
+    print "==               COMPARE RECOVERED VISIBILITIES               =="
+    print "================================================================"
+    print ""
+    print ""
 
 
+    print "True P_Q"
+    print "========"
+    print P_Q_true
+    print 
 
+    print "Recovered P_Q"
+    print "============="
+    P_Q_ = np.linalg.inv(J_) * \
+     np.matrix(V_Q[..., freq]) * np.linalg.inv(J_.H)
+    print np.round(P_Q_, 3)
+
+    print ""
+    print ""
+    
+    print "True P_U"
+    print "========"
+    print P_U_true 
+
+    print 
+
+    print "RecoveredP_U"
+    print "============"
+    P_U_ = np.linalg.inv(J_) * \
+     np.matrix(V_U[..., freq]) * np.linalg.inv(J_.H)
+    print (np.round(P_U_, 4))
 
 
 

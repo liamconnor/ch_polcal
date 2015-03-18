@@ -1,4 +1,3 @@
-
 """
 This programs is meant to solve for the full-pol gain solution 
 given two polarized calibrators (V_Q and V_U) and one unpolarized 
@@ -38,6 +37,7 @@ def get_eigenvectors(arr, N):
 
     """
     Gain_mat = arr.copy()
+
     nfeed = Gain_mat.shape[0]
                                           
     gain_approx = np.zeros([nfeed, N, 2], np.complex128)
@@ -49,8 +49,8 @@ def get_eigenvectors(arr, N):
         v1 = v[:,-1] #/ v[0,-1]
         v2 = v[:,-2] #/ v[0,-2]
 
-        gain_approx[:, k, 0] = cmath.sqrt(w[-1]) * v1 / np.sqrt(abs(v1**2).sum())
-        gain_approx[:, k, 1] = cmath.sqrt(w[-2]) * v2 / np.sqrt(abs(v2**2).sum())
+        gain_approx[:, k, -1] = cmath.sqrt(w[-1]) * v1 / np.sqrt(abs(v1**2).sum())
+        gain_approx[:, k, -2] = cmath.sqrt(w[-2]) * v2 / np.sqrt(abs(v2**2).sum())
 
     return gain_approx
 
@@ -103,7 +103,9 @@ def calc_moar(G, V_U, M_Q):
     frequency.
 
     """
-    wM, QM = np.linalg.eigh(M_Q, UPLO='U')
+    wM, QM = np.linalg.eig(M_Q)
+    
+    print 'wm', wM
 
     QM = normalize_evec(QM, sqrt=True)
     QSU = np.dot(G, QM)
@@ -118,7 +120,7 @@ def solve_phase(WP3W, lr=False):
     phase = WP3W[0, 1] # Assumes the xy basis
 
     if lr:
-        phase = -1.0J*WP3W[0,1]
+        phase = 1.0J*WP3W[0,1]
 
     theta = np.angle(phase)/2. # Should solve equation 4.13 in Greg's thesis
     
@@ -130,7 +132,8 @@ def polsol_freq(gain, V_Q, V_U, lr=False):
     M_Q = calc_WPW(gain, V_Q)
     WP3W, QM = calc_moar(gain, V_U, M_Q)
     theta = solve_phase(WP3W, lr=lr)
-
+    
+    
     print "theta =", theta
 
     return theta, QM

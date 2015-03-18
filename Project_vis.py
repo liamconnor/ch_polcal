@@ -90,8 +90,13 @@ if __name__=='__main__':
     times = f['times'][:]
     phase = f['phase'][:]
 
+<<<<<<< HEAD
 #    phase = get_parallactic(times, RA_src, dec_src)
 #    phase = (phase[0] - phase)/2
+=======
+    phase = get_parallactic(times, RA_src, dec_src)
+    phase = (np.radians(phase[0] - phase)/2)
+>>>>>>> a7a64cebfde545a3f81fd6b6610d2206d34b49b4
 
     rmodel = abs(data.copy())
 
@@ -99,7 +104,7 @@ if __name__=='__main__':
     ncorr = data.shape[1]
     ntimes = data.shape[-1]
     
-    assert len(times)==ntimes
+    assert len(phase)==ntimes
 
     dataPOL = fit_parallactic_rot(data, phase)
     
