@@ -1,8 +1,11 @@
 import numpy as np
 import h5py
+import matplotlib.pyplot as plt
 
 import ch_util.ephemeris as eph
 import coord_tools 
+
+
 
 # What does this program need to do?
 # it needs to get the parallactic angle as a fct of time
@@ -43,7 +46,7 @@ def get_parallactic(times, RA_src, dec_src):
 
     return np.degrees(par_r)
 
-def fit_parallactic_rot(arr, phase):
+def fit_parallactic_rot(data, phase):
     nfreq = data.shape[0]
     ncorr = data.shape[1]
     ntimes = data.shape[-1]
@@ -51,15 +54,22 @@ def fit_parallactic_rot(arr, phase):
     A = np.zeros([ntimes, 3], np.complex128)
     x_sol = np.zeros([3, ncorr, nfreq], np.complex128)
     
+
+    #plt.figure()
     for corr in range(ncorr):
         A[:, 0] = 1 #rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
         A[:, 1] = np.exp(1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
         A[:, 2] = np.exp(-1.0J * phase)# * rmodel[:, corr, nfreq/2] / rmodel[:, corr, nfreq/2].sum()
 
-        B = data[:, corr, :].transpose()
+        B = data[:, corr, :]
 
         x_sol[:, corr, :] = np.linalg.lstsq(A, B)[0]
+        
+        plt.plot(np.dot(A, x_sol[:, corr, 0]))
+        plt.plot(B[:, 0])
 
+    plt.legend(['xx fit','xx data','xy fit','xy data','yy fit', 'yy data'])
+    plt.show()
     dataPOL = np.zeros_like(x_sol)
 
     dataPOL[0, :, :] = x_sol[0, :, :] 
@@ -71,17 +81,17 @@ def fit_parallactic_rot(arr, phase):
     return dataPOL
 
 if __name__=='__main__':
-    fname = 'poldata.hdf5'
+    fname = 'test.hdf5'
 
     RA_src, dec_src = 53.51337, 54.6248916
 
     f = h5py.File(fname, 'r')
     data = f['arr'][:]
     times = f['times'][:]
-#    phase = f['phase'][:]
+    phase = f['phase'][:]
 
-    phase = get_parallactic(times, RA_src, dec_src)
-    phase = (phase[0] - phase)/2
+#    phase = get_parallactic(times, RA_src, dec_src)
+#    phase = (phase[0] - phase)/2
 
     rmodel = abs(data.copy())
 
@@ -91,11 +101,11 @@ if __name__=='__main__':
     
     assert len(times)==ntimes
 
-    dataPOL = fit_parallactic_rot(arr, phase)
+    dataPOL = fit_parallactic_rot(data, phase)
     
-    print "I : xx, xy, yy", np.round(dataPOL[0, :, 0]/dataPOL[0,0,0], 3)
-    print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0]/dataPOL[0,0,0], 3)
-    print "U : xx, xy, yy", np.round(dataPOL[2, :, 0]/dataPOL[0,0,0], 3)
+    print "I : xx, xy, yy", np.round(dataPOL[0, :, 0]/dataPOL[0,0,0], 5)
+    print "Q : xx, xy, yy", np.round(dataPOL[1, :, 0]/dataPOL[0,0,0], 5)
+    print "U : xx, xy, yy", np.round(dataPOL[2, :, 0]/dataPOL[0,0,0], 5)
 
     g = h5py.File('outtest.hdf5','w')
     g.create_dataset('data', data=dataPOL)
