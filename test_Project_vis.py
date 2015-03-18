@@ -58,7 +58,7 @@ class Test_Project_vis(unittest.TestCase):
 def _test_simulate_observation():
     """ Simulate a time stream and get polcal solution
     """
-    lr = False 
+    lr = True 
     I, Q, U, V = 1, 0.5, 0.3, 0.0
     PolMat = PM.PolcalMatrices([I, Q, U, V])
 
@@ -70,7 +70,7 @@ def _test_simulate_observation():
     phase = 2 * coord_tools.local_coords_dhl(np.radians(dec_src), \
                ha_r, np.radians(pv.AROLATITUDE))[-1][:, np.newaxis, np.newaxis]
 
-    J = np.array([[1., 0.04j], [0.05+0.02j, 1.4]]) #* np.exp(1j*33*1.0)
+    J = np.array([[1., 0.01j], [0.2+0.0j, 1.3]]) #* np.exp(1j*33*1.0)
 
 
     P_Q = np.array(Q * PolMat.dq).astype(np.complex128)
@@ -104,7 +104,7 @@ def _test_simulate_observation():
         + 1j * np.random.normal(0, 0.5, ntimes*2*2).reshape(-1, 2, 2)
 
     V = V_I + 0.5 * (V_Q - 1.0J*V_U) *  np.exp(1.0J*phase) \
-            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-1.0J*phase) + 1. * noise
+            + 0.5*(V_Q + 1.0J*V_U)*np.exp(-1.0J*phase) + 0. * noise
 
     #assert np.round(np.linalg.det(P_Q), 2) == np.round(-1 * Q**2, 2)
     #assert np.linalg.det(P_U).astype(np.float) == -1 * U**2

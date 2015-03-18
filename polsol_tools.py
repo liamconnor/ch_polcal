@@ -8,6 +8,9 @@ Written by Liam Connor connor@astro.utoronto.ca
 import numpy as np
 import h5py
 import cmath
+import scipy.linalg.lapack
+
+eig = scipy.linalg.lapack.dsyev
 
 def normalize_evec(evec, ax=None, sqrt=True):
     """ Vectors are routinely normalized by their 
@@ -44,7 +47,10 @@ def get_eigenvectors(arr, N):
 
     for k in range(N):
         # Get the last two e-vals and e-vecs. Gain_mat should be rank 2
-        w, v = np.linalg.eigh(Gain_mat[:, :, k], UPLO='U')      
+        #w, v = np.linalg.eigh(Gain_mat[:, :, k], UPLO='U')      
+        w, v, INFO = eig(Gain_mat[:, :, k])
+
+        assert INFO==0
 
         v1 = v[:,-1] #/ v[0,-1]
         v2 = v[:,-2] #/ v[0,-2]
@@ -84,8 +90,8 @@ def pop_stokes_mat(arr, nfeed=2):
     V_Q[np.tril_indices(nfeed)] = np.conj(arr[1])
     V_U[np.tril_indices(nfeed)] = np.conj(arr[2])
 
-    return np.round(V_I, 10), np.round(V_Q, 10), np.round(V_U, 10)
-#    return V_I, V_Q, V_U
+    #return np.round(V_I, 10), np.round(V_Q, 10), np.round(V_U, 10)
+    return V_I, V_Q, V_U
 
 def calc_WPW(G, V):
     """ Calculates the matrix M=WPW^\dagger using
@@ -103,9 +109,11 @@ def calc_moar(G, V_U, M_Q):
     frequency.
 
     """
-    wM, QM = np.linalg.eig(M_Q)
+    #wM, QM = np.linalg.eig(M_Q)
+    wM, QM, INFO = eig(M_Q)
+
+    assert INFO==0
     
-    print 'wm', wM
 
     QM = normalize_evec(QM, sqrt=True)
     QSU = np.dot(G, QM)

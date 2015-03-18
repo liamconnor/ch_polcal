@@ -4,15 +4,19 @@
 import numpy as np
 import h5py
 
+import scipy.linalg.lapack
+
 import polsol_tools as polsol
 import PolcalMatrices
 
+eig = scipy.linalg.lapack.dsyev
+
 lr = True
 
-PM = PolcalMatrices.PolcalMatrices([1, 1, 1, 0.0])
+PM = PolcalMatrices.PolcalMatrices([1, 0.5, 0.3, 0.0])
 
 if lr:
-     Qp = np.array([[1, 1],[1, -1]])/np.sqrt(2)
+     Qp = np.array([[1, -1],[1, 1]])/np.sqrt(2)
 else:
      Qp = np.linalg.eig(PM.dq)[1]
 
@@ -20,14 +24,37 @@ else:
 f = h5py.File('outtest.hdf5', 'r')
 arr = f['data'][:]
 
-g = h5py.File('test.hdf5', 'r')
-J_true = g['J'][:]
-P_U_true = g['P_U'][:]
-P_Q_true = g['P_Q'][:]
+# J = np.matrix([[1., 0.01], [0.0j, 1.3]])
+# J_true = J.copy()
 
+# P_I = PM.I * PM.dic
+# V_I = np.dot(J, np.dot(P_I, J.H))
+# V_I = np.array(V_I)[:,:, np.newaxis]
+
+# P_Q = np.matrix([[0.0,  PM.Q],[PM.Q, 0.0]])
+# V_Q = np.array(np.dot(J, np.dot(P_Q, J.H)))[..., np.newaxis]
+
+# P_U = np.matrix([[0.0,  1j*PM.U], [-1j*PM.U, 0.0]])
+# V_U = np.array(np.dot(J, np.dot(P_U, J.H)))[..., np.newaxis]
+
+# print P_I
+# print P_Q
+# print P_U
+
+g = h5py.File('test.hdf5', 'r')
+
+J_true = g['J'][:]
+P_U = g['P_U'][:]
+P_Q = g['P_Q'][:]
+
+wp, Qp, INFO = eig(P_Q)
+assert INFO==0
+print "Qp"
+print Qp
 
 nfeed = 2
 nfreq = arr.shape[-1]
+nfreq = 1
 
 V_I, V_Q, V_U = polsol.pop_stokes_mat(arr, nfeed=nfeed)
 
@@ -63,11 +90,11 @@ for freq in range(nfreq-1, nfreq):
     print ""
 
     print "True Jones matrix"
-    print J_true / J_true[0,0]
+    print abs(J_true / (J_true[0,0]))
     print ""
 
     print "Jones solution"
-    print np.round(J_ / J_[0,0], 4)
+    print np.round(abs(J_ / (J_[0,0])),4)
     print 
 
     print "================================================================"
@@ -79,7 +106,7 @@ for freq in range(nfreq-1, nfreq):
 
     print "True P_Q"
     print "========"
-    print P_Q_true
+    print P_Q
     print 
 
     print "Recovered P_Q"
@@ -93,7 +120,7 @@ for freq in range(nfreq-1, nfreq):
     
     print "True P_U"
     print "========"
-    print P_U_true 
+    print P_U
 
     print 
 

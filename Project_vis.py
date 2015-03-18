@@ -70,6 +70,7 @@ def fit_parallactic_rot(data, phase):
 
     plt.legend(['xx fit','xx data','xy fit','xy data','yy fit', 'yy data'])
     plt.show()
+
     dataPOL = np.zeros_like(x_sol)
 
     dataPOL[0, :, :] = x_sol[0, :, :] 
@@ -90,13 +91,8 @@ if __name__=='__main__':
     times = f['times'][:]
     phase = f['phase'][:]
 
-<<<<<<< HEAD
 #    phase = get_parallactic(times, RA_src, dec_src)
 #    phase = (phase[0] - phase)/2
-=======
-    phase = get_parallactic(times, RA_src, dec_src)
-    phase = (np.radians(phase[0] - phase)/2)
->>>>>>> a7a64cebfde545a3f81fd6b6610d2206d34b49b4
 
     rmodel = abs(data.copy())
 
